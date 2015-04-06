@@ -1,0 +1,135 @@
+package com.oliviadodge.android.testing123;
+
+import android.content.Context;
+import android.util.Log;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.util.List;
+
+import javax.net.ssl.HttpsURLConnection;
+
+/**
+ * Created by oliviadodge on 4/1/2015.
+ */
+public class ItemPoster {
+
+    public static final String TAG = "ItemPoster";
+    public static final String ENDPOINT = "http://czshopper.herokuapp.com/items.json";
+    public static final String AUTH_TOKEN = "pZpZt8GwRPCauhXyyBD1";
+    public static final String METHOD_POST = "POST";
+    public static final String ACCEPT_HEADER = "Accept";
+    public static final String CONTENT_TYPE = "Content-type";
+    public static final String AUTHORIZATION = "X-CZ-Authorization";
+    public static final String FILENAME = "items.json";
+
+    private Context mContext;
+
+    public ItemPoster(Context c){
+        mContext = c;
+    }
+
+    public void writeToFile() throws JSONException, IOException {
+
+//        JSONArray array = new JSONArray();
+//        for (int i = 0; i < 10; i++) {
+//            JSONObject jsonObject = (new GroceryListItem(Integer.toString(i), "category", "item")).getJsonObject();
+//            array.put(jsonObject);
+//        }
+
+        GroceryListItem gli = new GroceryListItem("eggs", "breakfast");
+        JSONObject jsonObject = gli.getJsonObject();
+
+        //Write the file to a disk
+        Writer writer = null;
+        try {
+            OutputStream out = mContext.openFileOutput(FILENAME, Context.MODE_PRIVATE);
+            writer = new OutputStreamWriter(out);
+            writer.write(jsonObject.toString());
+            Log.i(TAG, "this is  what jsonObject looks like "+jsonObject.toString());
+        } finally {
+            if (writer != null)
+                writer.close();
+        }
+    }
+
+
+    public void postJSONItem()  {
+
+        byte[] buffer = new byte[1024];
+
+        try {
+
+            URL url = new URL(ENDPOINT);
+//
+//            FileInputStream fileInputStream = mContext.openFileInput(FILENAME);
+//            BufferedInputStream bis = new BufferedInputStream(fileInputStream);
+
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+
+            connection.setRequestProperty(ACCEPT_HEADER, "application/json");
+            connection.setRequestProperty(CONTENT_TYPE, "application/json");
+            connection.setRequestProperty(AUTHORIZATION, AUTH_TOKEN);
+            connection.setRequestMethod(METHOD_POST);
+
+            connection.setDoInput(true);
+//
+//            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+//
+//            while ((bis.read(buffer, 0, buffer.length)) != -1)
+//            {
+//                baos.write(buffer);
+//            }
+
+//            byte[] byteArray = baos.toByteArray();
+
+            GroceryListItem gli = new GroceryListItem("eggs", "breakfast");
+            JSONObject jsonObject = gli.getJsonObject();
+
+            byte[] byteArray = jsonObject.toString().getBytes();
+            connection.setFixedLengthStreamingMode(byteArray.length);
+
+
+//            BufferedOutputStream out = new BufferedOutputStream(connection.getOutputStream());
+            OutputStream out = connection.getOutputStream();
+
+            out.write(byteArray);
+
+            out.flush();
+            out.close();
+            Log.i(TAG, "HTTPS response code is " + connection.getResponseCode());
+
+            InputStream eis = connection.getErrorStream();
+            if (eis != null){
+                while ((eis.read(buffer, 0, buffer.length)) != -1) {
+                    Log.i(TAG, new String(buffer));
+                }
+
+                eis.close();
+//            fileInputStream.close();
+                connection.disconnect();
+            }
+
+            Log.i(TAG, "Item successfully posted to server");
+
+        }catch (IOException | JSONException e) {
+            Log.e(TAG, "problem posting  ", e);
+        }
+    }
+}

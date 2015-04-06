@@ -1,0 +1,31 @@
+<resources>
+    <string name="app_name">Testing123</string>
+
+    <string name="action_settings">Settings</string>
+
+    <!--Context Menu-->
+
+    <string name="delete_item">Delete Item</string>
+
+    <!--List Menu-->
+
+    <string name="new_item">Add Item</string>
+
+    <!--NewItemDialogFragment-->
+
+    <string name="new_item_dialog_title">New Item</string>
+    <string name="edit_text_title_category">Category</string>
+    <string name="edit_text_title_name">Item Name</string>
+    <string name="new_item_save">Save</string>
+    <string name="new_item_cancel">Cancel</string>
+
+    <!--EditItemDialogFragment-->
+
+    <string name="edit_item_dialog_title">New Item</string>
+    <string name="edit_item_save">Save</string>
+    <string name="edit_item_cancel">Cancel Edit</string>
+    <string name="edit_item_delete">Delete Item</string>
+
+
+
+</resources>
