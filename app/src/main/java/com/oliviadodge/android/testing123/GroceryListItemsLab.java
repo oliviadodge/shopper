@@ -68,7 +68,7 @@ public class GroceryListItemsLab {
         }
     }
 
-    public void delete(GroceryListItem bc){
-        mGroceryListItems.remove(bc);
+    public void delete(GroceryListItem item){
+        mGroceryListItems.remove(item);
     }
 }

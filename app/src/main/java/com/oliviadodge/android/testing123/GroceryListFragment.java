@@ -2,11 +2,9 @@ package com.oliviadodge.android.testing123;
 
 import android.app.Activity;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
-import android.preference.PreferenceManager;
 import android.support.v4.app.Fragment;
 import android.util.Log;
 import android.view.ActionMode;
@@ -23,9 +21,6 @@ import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
 
-import org.json.JSONException;
-import org.json.JSONObject;
-
 import java.util.ArrayList;
 
 /**
@@ -35,6 +30,7 @@ import java.util.ArrayList;
  * with a GridView.
  * <p/>
  * Activities containing this fragment MUST implement the
+ *
  * {@link com.oliviadodge.android.testing123.GroceryListFragment.OnGroceryListItemSelectedListener}
  * interface.
  */
@@ -45,7 +41,6 @@ public class GroceryListFragment extends Fragment implements AbsListView.OnItemC
 
     private ArrayList<GroceryListItem> mItems;
     private OnGroceryListItemSelectedListener mListener;
-    private static final int REQUEST_ANSWER = 1;
     private static final String TAG = "GroceryListFragment";
 
     private ItemsHandlerThread<String> mItemsDownloaderThread;
@@ -75,43 +70,42 @@ public class GroceryListFragment extends Fragment implements AbsListView.OnItemC
         setRetainInstance(true);
         setHasOptionsMenu(true);
 
-        mItemsDownloaderThread = new ItemsHandlerThread<String>(new Handler());
-        mItemsDownloaderThread.setListener(new ItemsHandlerThread.Listener<String>(){
+        mItemsDownloaderThread = new ItemsHandlerThread<>(new Handler());
+        mItemsDownloaderThread.setListener(new ItemsHandlerThread.Listener<String>() {
             @Override
             public void onItemsDownloaded(ArrayList<GroceryListItem> items) {
-                mItems = items;
                 GroceryListItemsLab.get(getActivity()).updateItems(items);
+                mItems = GroceryListItemsLab.get(getActivity()).getGroceryListItems();
                 setUpAdapter();
             }
+
             @Override
             public void onItemAdded(GroceryListItem item) {
+                Log.i(TAG, "Got item added " + item);
                 GroceryListItemsLab.get(getActivity()).add(item);
-                mItems = GroceryListItemsLab.get(getActivity()).getGroceryListItems();
                 updateUI();
             }
 
             @Override
             public void onItemEdited(GroceryListItem item) {
-                GroceryListItemsLab.get(getActivity()).updateByIndex(item);
-                mItems = GroceryListItemsLab.get(getActivity()).getGroceryListItems();
+                Log.i(TAG, "Got newly edited item " + item);
+//                GroceryListItemsLab.get(getActivity()).updateByIndex(item);
                 updateUI();
             }
 
             @Override
             public void onItemDeleted(GroceryListItem item) {
                 GroceryListItemsLab.get(getActivity()).delete(item);
-                mItems = GroceryListItemsLab.get(getActivity()).getGroceryListItems();
                 updateUI();
-
-
             }
         });
         mItemsDownloaderThread.start();
-        Log.i(TAG, "ItemsHandlerThread thread started");
-        mItemsDownloaderThread.onLooperPrepared();
         mItemsDownloaderThread.getLooper();
+        Log.i(TAG, "ItemsHandlerThread thread started");
 
-        mItems = GroceryListItemsLab.get(getActivity()).getGroceryListItems();
+
+        if (mItems == null)
+            mItems = GroceryListItemsLab.get(getActivity()).getGroceryListItems();
 
     }
 
@@ -164,11 +158,14 @@ public class GroceryListFragment extends Fragment implements AbsListView.OnItemC
                 @Override
                 public boolean onActionItemClicked(ActionMode mode, MenuItem item) {
                     switch (item.getItemId()){
-                        case R.id.menu_item_delete_crossing:
-                            GroceryListItemsLab items = GroceryListItemsLab.get(getActivity());
+                        case R.id.menu_item_delete:
+//                            GroceryListItemsLab items = GroceryListItemsLab.get(getActivity());
                             for (int i = mAdapter.getCount() -1; i >= 0; i--){
                                 if (mListView.isItemChecked(i)){
-                                    items.delete(mAdapter.getItem(i));
+                                    GroceryListItem gli = mAdapter.getItem(i);
+//                                    items.delete(gli);
+                                    String token = "delete" + i;
+                                    mItemsDownloaderThread.deleteItem(token, gli);
                                 }
                             }
                             mode.finish();
@@ -186,7 +183,8 @@ public class GroceryListFragment extends Fragment implements AbsListView.OnItemC
                 }
             });
         }
-        mItemsDownloaderThread.queueItems("download", new GroceryListItem());
+
+        mItemsDownloaderThread.queueItems("download", new GroceryListItem("name", "category"));
 
         return view;
     }
@@ -195,7 +193,8 @@ public class GroceryListFragment extends Fragment implements AbsListView.OnItemC
         if (getActivity() == null || mListView == null) return;
 
         if (mItems != null){
-            mListView.setAdapter(new GroceryListItemAdapter(mItems));
+            mAdapter = new GroceryListItemAdapter(mItems);
+            mListView.setAdapter(mAdapter);
         } else
             mListView.setAdapter(null);
     }
@@ -287,17 +286,31 @@ public class GroceryListFragment extends Fragment implements AbsListView.OnItemC
             switch (resultCode) {
                 case Activity.RESULT_OK:
                     GroceryListItem gli = (GroceryListItem) data.getSerializableExtra(NewItemDialogFragment.EXTRA_ITEM);
+                    Log.i(TAG, "new item added: " + gli);
                     if (mItemsDownloaderThread != null && gli != null){
-                        mItemsDownloaderThread.addItem("add", gli);
+                         mItemsDownloaderThread.addItem("add", gli);
                     }
                     break;
                 case Activity.RESULT_CANCELED:
                     super.onActivityResult(requestCode, resultCode, data);
             }
         } else if (requestCode == REQUEST_EDIT_ITEM) {
-            GroceryListItem gli = (GroceryListItem) data.getSerializableExtra(EditItemDialogFragment.EXTRA_ITEM);
-            if (mItemsDownloaderThread != null && gli != null){
-                mItemsDownloaderThread.editItem("edit", gli);
+            switch (resultCode) {
+                case Activity.RESULT_OK:
+                    GroceryListItem gli = (GroceryListItem) data.getSerializableExtra(EditItemDialogFragment.EXTRA_ITEM);
+                    if (mItemsDownloaderThread != null && gli != null){
+                        mItemsDownloaderThread.editItem("edit", gli);
+                    }
+                    break;
+                case Activity.RESULT_FIRST_USER:
+                    GroceryListItem item = (GroceryListItem) data.getSerializableExtra(EditItemDialogFragment.EXTRA_ITEM);
+                    if (mItemsDownloaderThread != null && item != null){
+                        mItemsDownloaderThread.deleteItem("delete", item);
+                    }
+                    break;
+                case Activity.RESULT_CANCELED:
+                    super.onActivityResult(requestCode, resultCode, data);
+                    break;
             }
         }
     }
@@ -344,15 +357,4 @@ public class GroceryListFragment extends Fragment implements AbsListView.OnItemC
             return convertView;
         }
     }
-
-    public String convertToJSON(GroceryListItem item){
-        String jsonString = null;
-        try {
-            jsonString = item.getJsonObject().toString();
-        } catch (JSONException e) {
-            e.printStackTrace();
-        }
-        return jsonString;
-    }
-
 }

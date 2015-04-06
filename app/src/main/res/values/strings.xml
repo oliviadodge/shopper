@@ -21,7 +21,7 @@
 
     <!--EditItemDialogFragment-->
 
-    <string name="edit_item_dialog_title">New Item</string>
+    <string name="edit_item_dialog_title">Edit Item</string>
     <string name="edit_item_save">Save</string>
     <string name="edit_item_cancel">Cancel Edit</string>
     <string name="edit_item_delete">Delete Item</string>

@@ -10,6 +10,7 @@ import android.view.MenuItem;
 public class GroceryListActivity extends ActionBarActivity implements GroceryListFragment.OnGroceryListItemSelectedListener{
     public static final String TAG = "GroceryListActivity";
     public static final String NEW_ITEM_DIALOG = "NewItemDialogFragment";
+    public static final String EDIT_ITEM_DIALOG = "EditItemDialogFragment";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -24,6 +25,12 @@ public class GroceryListActivity extends ActionBarActivity implements GroceryLis
 
     @Override
     public void onListItemSelected(int id) {
+        GroceryListItem item = GroceryListItemsLab.get(this).getId(id);
+        FragmentManager fm = getSupportFragmentManager();
+        GroceryListFragment glf = (GroceryListFragment) fm.findFragmentById(R.id.fragmentContainer);
+        EditItemDialogFragment editItemDialogFragment = EditItemDialogFragment.newInstance(item);
+        editItemDialogFragment.setTargetFragment(glf, GroceryListFragment.REQUEST_EDIT_ITEM);
+        editItemDialogFragment.show(fm, EDIT_ITEM_DIALOG);
 
     }
 

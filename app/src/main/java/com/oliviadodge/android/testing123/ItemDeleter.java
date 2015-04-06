@@ -25,7 +25,6 @@ public class ItemDeleter {
     public static final String AUTH_TOKEN = "pZpZt8GwRPCauhXyyBD1";
     public static final String METHOD_DELETE = "DELETE";
     public static final String AUTHORIZATION = "X-CZ-Authorization";
-    public static final String PARAM_ID = "id";
 
     public GroceryListItem mGroceryListItem;
 
@@ -33,27 +32,24 @@ public class ItemDeleter {
         mGroceryListItem = groceryListitem;
     }
 
-    public void deleteItem()  {
+    public GroceryListItem deleteItem()  {
 
-        String urlString = Uri.parse(ENDPOINT).buildUpon()
-                .appendQueryParameter("method", METHOD_DELETE)
-                .appendQueryParameter(AUTH_TOKEN, AUTH_TOKEN)
-                .appendQueryParameter(PARAM_ID, "900")
-                .build().toString();
+        String urlString = getUrlWithId();
 
-        byte[] buffer = new byte[1024];
+        HttpURLConnection connection = null;
+        try {
+            URL url = new URL(urlString);
+            connection = (HttpURLConnection) url.openConnection();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 
         try {
-
-            URL url = new URL(urlString);
-
-            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
 
 
             connection.setRequestProperty(AUTHORIZATION, AUTH_TOKEN);
             connection.setRequestMethod(METHOD_DELETE);
-
-            connection.setDoOutput(true);
+            getErrorStream(connection);
 //
 //            JSONObject jsonObject = mGroceryListItem.getJsonObject();
 //            byte[] byteArray = jsonObject.toString().getBytes();
@@ -65,17 +61,7 @@ public class ItemDeleter {
 //
 //            out.flush();
 //            out.close();
-            Log.i(TAG, "HTTPS response code is " + connection.getResponseCode());
 
-            InputStream eis = connection.getErrorStream();
-            if (eis != null){
-                while ((eis.read(buffer, 0, buffer.length)) != -1) {
-                    Log.i(TAG, new String(buffer));
-                }
-
-                eis.close();
-                connection.disconnect();
-            }
 //            out.close();
             connection.disconnect();
 
@@ -84,5 +70,32 @@ public class ItemDeleter {
         }catch (IOException e) {
             Log.e(TAG, "problem deleting  ", e);
         }
+
+        return mGroceryListItem;
     }
+
+    public String getUrlWithId(){
+        String url = ENDPOINT;
+        Integer id = mGroceryListItem.getId();
+        return url.replace(":id", id.toString());
+    }
+
+    public void getErrorStream(HttpURLConnection connection){
+        byte[] buffer = new byte[1024];
+
+        try {
+            Log.i(TAG, "HTTPS response code is " + connection.getResponseCode());
+            InputStream eis = connection.getErrorStream();
+            if (eis != null){
+                while ((eis.read(buffer, 0, buffer.length)) != -1) {
+                    Log.i(TAG, new String(buffer));
+                }
+
+                eis.close();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
 }

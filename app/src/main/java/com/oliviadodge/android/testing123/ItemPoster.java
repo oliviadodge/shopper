@@ -57,6 +57,7 @@ public class ItemPoster {
             connection.setRequestProperty(CONTENT_TYPE, "application/json");
             connection.setRequestProperty(AUTHORIZATION, AUTH_TOKEN);
             sendOutJSON(connection);
+            getErrorStream(connection);
 
 
             Log.i(TAG, "Item successfully posted to server");
@@ -128,7 +129,6 @@ public class ItemPoster {
                 }
 
                 eis.close();
-                connection.disconnect();
             }
         } catch (IOException e) {
             e.printStackTrace();

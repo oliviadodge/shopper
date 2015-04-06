@@ -4,6 +4,7 @@ package com.oliviadodge.android.testing123;
  * Created by oliviadodge on 4/2/2015.
  */
 
+import android.content.Intent;
 import android.util.Log;
 
 import org.json.JSONException;
@@ -16,6 +17,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
 import java.net.URL;
 
 public class ItemUpdater {
@@ -36,19 +38,43 @@ public class ItemUpdater {
 
     public GroceryListItem updateItem()  {
 
-        byte[] buffer = new byte[1024];
+        String urlSpec = getUrlWithId();
+
+        URL url = null;
+        try {
+            url = new URL(urlSpec);
+        } catch (MalformedURLException e) {
+            e.printStackTrace();
+        }
+
+        HttpURLConnection connection = null;
+        try {
+            connection = (HttpURLConnection) url.openConnection();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 
         try {
-
-            URL url = new URL(ENDPOINT);
-
-            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
 
             connection.setRequestProperty(ACCEPT_HEADER, "application/json");
             connection.setRequestProperty(CONTENT_TYPE, "application/json");
             connection.setRequestProperty(AUTHORIZATION, AUTH_TOKEN);
-            connection.setRequestMethod(METHOD_PUT);
+            sendOutJSON(connection);
+            getErrorStream(connection);
 
+            Log.i(TAG, "Item successfully posted to server");
+
+        } finally {
+            connection.disconnect();
+        }
+
+        return mGroceryListItem;
+    }
+
+    public void sendOutJSON(HttpURLConnection connection){
+
+        try {
+            connection.setRequestMethod(METHOD_PUT);
             connection.setDoOutput(true);
 
             JSONObject jsonObject = mGroceryListItem.getJsonObject();
@@ -61,29 +87,14 @@ public class ItemUpdater {
 
             mGroceryListItem = getGroceryListItem(connection);
 
-            out.flush();
             out.close();
-            Log.i(TAG, "HTTPS response code is " + connection.getResponseCode());
 
-            InputStream eis = connection.getErrorStream();
-            if (eis != null){
-                while ((eis.read(buffer, 0, buffer.length)) != -1) {
-                    Log.i(TAG, new String(buffer));
-                }
-
-                eis.close();
-                connection.disconnect();
-            }
-            out.close();
-            connection.disconnect();
-
-            Log.i(TAG, "Item successfully posted to server");
-
-        }catch (IOException | JSONException e) {
-            Log.e(TAG, "problem posting  ", e);
+        } catch (JSONException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
 
-        return mGroceryListItem;
     }
 
     public GroceryListItem getGroceryListItem(HttpURLConnection connection){
@@ -111,6 +122,32 @@ public class ItemUpdater {
         }
 
         return gli;
+    }
+
+    public void getErrorStream(HttpURLConnection connection){
+        byte[] buffer = new byte[1024];
+
+        try {
+            Log.i(TAG, "HTTPS response code is " + connection.getResponseCode());
+
+            InputStream eis = connection.getErrorStream();
+            if (eis != null){
+                while ((eis.read(buffer, 0, buffer.length)) != -1) {
+                    Log.i(TAG, new String(buffer));
+                }
+
+                eis.close();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+    }
+
+    public String getUrlWithId(){
+        String url = ENDPOINT;
+        Integer id = mGroceryListItem.getId();
+        return url.replace(":id", id.toString());
     }
 
 }

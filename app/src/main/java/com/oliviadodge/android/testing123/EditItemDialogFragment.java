@@ -8,34 +8,92 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v4.app.DialogFragment;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.view.View;
+import android.widget.EditText;
+
+import java.util.Date;
 
 /**
- * Created by oliviadodge on 2/20/2015.
+ * Created by oliviadodge on 4/04/2015.
  */
 public class EditItemDialogFragment extends DialogFragment {
 
     public static final String EXTRA_ITEM = "EditItem";
-    private boolean mSaveNewItem;
+    public GroceryListItem mItem;
+    public String mCategory;
+    public String mName;
+
+    public static EditItemDialogFragment newInstance(GroceryListItem item){
+        Bundle args = new Bundle();
+        args.putSerializable(EXTRA_ITEM, item);
+
+        EditItemDialogFragment fragment = new EditItemDialogFragment();
+        fragment.setArguments(args);
+
+        return fragment;
+    }
 
     @Override
     @NonNull
     public Dialog onCreateDialog(Bundle savedInstanceState) {
+        mItem = (GroceryListItem) getArguments().getSerializable(EXTRA_ITEM);
+        mCategory = mItem.getCategory();
+        mName = mItem.getName();
+
         // Use the Builder class for convenient dialog construction
         AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
         View v = getActivity().getLayoutInflater().inflate(R.layout.dialog_new_item, null);
 
+        EditText category = (EditText) v.findViewById(R.id.edit_text_category);
+        category.setText(mItem.getCategory());
+        category.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                mItem.setCategory(s.toString());
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+
+            }
+        });
+
+        EditText name = (EditText) v.findViewById(R.id.edit_text_name);
+        name.setText(mItem.getName());
+        name.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                mItem.setName(s.toString());
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+
+            }
+        });
+
         builder.setView(v);
-        builder.setTitle(R.string.new_item_dialog_title);
+        builder.setTitle(R.string.edit_item_dialog_title);
 
         builder.setPositiveButton(R.string.new_item_save, new DialogInterface.OnClickListener() {
             public void onClick(DialogInterface dialog, int id) {
                 if (getTargetFragment() == null)
                     return;
-                mSaveNewItem = true;
 
                 Intent i = new Intent();
-                i.putExtra(EXTRA_ITEM, mSaveNewItem);
+                i.putExtra(EXTRA_ITEM, mItem);
 
                 getTargetFragment().onActivityResult(getTargetRequestCode(), Activity.RESULT_OK, i);
             }
@@ -45,12 +103,25 @@ public class EditItemDialogFragment extends DialogFragment {
             public void onClick(DialogInterface dialog, int id) {
                 if (getTargetFragment() == null)
                     return;
-                mSaveNewItem = false;
 
+                mItem.setCategory(mCategory);
+                mItem.setName(mName);
                 Intent i = new Intent();
-                i.putExtra(EXTRA_ITEM, mSaveNewItem);
-
                 getTargetFragment().onActivityResult(getTargetRequestCode(), Activity.RESULT_CANCELED, i);
+            }
+        });
+
+        builder.setNeutralButton(R.string.edit_item_delete, new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                if (getTargetFragment() == null)
+                    return;
+
+                mItem.setCategory(mCategory);
+                mItem.setName(mName);
+                Intent i = new Intent();
+                i.putExtra(EXTRA_ITEM, mItem);
+                getTargetFragment().onActivityResult(getTargetRequestCode(), Activity.RESULT_FIRST_USER, i);
             }
         });
         // Create the AlertDialog object and return it

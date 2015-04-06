@@ -27,14 +27,14 @@ public class ItemsHandlerThread<Token> extends HandlerThread {
 
     Handler mHandler;
     Handler mResponseHandler;
-    Map<Token, String> requestMap = Collections.synchronizedMap(new HashMap<Token, String>());
+    Map<Token, GroceryListItem> requestMap = Collections.synchronizedMap(new HashMap<Token, GroceryListItem>());
     Listener<Token> mListener;
 
     public interface Listener<Token> {
-        void onItemsDownloaded(ArrayList<String> items);
-        void onItemAdded(String item);
-        void onItemEdited(String item);
-        void onItemDeleted(String item);
+        void onItemsDownloaded(ArrayList<GroceryListItem> items);
+        void onItemAdded(GroceryListItem item);
+        void onItemEdited(GroceryListItem item);
+        void onItemDeleted(GroceryListItem item);
     }
 
     public void setListener(Listener<Token> listener){
@@ -46,23 +46,23 @@ public class ItemsHandlerThread<Token> extends HandlerThread {
         mResponseHandler = responseHandler;
     }
 
-    public void queueItems(Token token, String string) {
-        requestMap.put(token, string);
+    public void queueItems(Token token, GroceryListItem groceryListItem) {
+        requestMap.put(token, groceryListItem);
         mHandler.obtainMessage(MESSAGE_DOWNLOAD, token).sendToTarget();
     }
 
-    public void addItem(Token token, String string) {
-        requestMap.put(token, string);
+    public void addItem(Token token, GroceryListItem groceryListItem) {
+        requestMap.put(token, groceryListItem);
         mHandler.obtainMessage(MESSAGE_ADD, token).sendToTarget();
     }
 
-    public void editItem(Token token, String string) {
-        requestMap.put(token, string);
+    public void editItem(Token token, GroceryListItem groceryListItem) {
+        requestMap.put(token, groceryListItem);
         mHandler.obtainMessage(MESSAGE_EDIT, token).sendToTarget();
     }
 
-    public void deleteItem(Token token, String string) {
-        requestMap.put(token, string);
+    public void deleteItem(Token token, GroceryListItem groceryListItem) {
+        requestMap.put(token, groceryListItem);
         mHandler.obtainMessage(MESSAGE_DELETE, token).sendToTarget();
     }
 
@@ -98,17 +98,17 @@ public class ItemsHandlerThread<Token> extends HandlerThread {
     }
 
     private void handleDownloadRequest(final Token token){
-        final String string = requestMap.get(token);
+        final GroceryListItem groceryListItem = requestMap.get(token);
 
         ItemsGetter itemsGetter = new ItemsGetter();
-        final ArrayList<String> items = itemsGetter.getItems();
+        final ArrayList<GroceryListItem> items = itemsGetter.getItems();
 
         Log.i(TAG, "Items downloaded: " + items);
 
         mResponseHandler.post(new Runnable() {
             @Override
             public void run() {
-                if (requestMap.get(token) != string)
+                if (requestMap.get(token) != groceryListItem)
                     return;
                 requestMap.remove(token);
                 mListener.onItemsDownloaded(items);
@@ -118,19 +118,19 @@ public class ItemsHandlerThread<Token> extends HandlerThread {
     }
 
     private void handleAddRequest(final Token token){
-        final String string = requestMap.get(token);
-        if (string == null)
+        final GroceryListItem groceryListItem = requestMap.get(token);
+        if (groceryListItem == null)
             return;
 
-        ItemPoster itemPoster = new ItemPoster(string);
-        final String item = itemPoster.postItem();
+        ItemPoster itemPoster = new ItemPoster(groceryListItem);
+        final GroceryListItem item = itemPoster.postItem();
 
         Log.i(TAG, "Item added: " + item);
 
         mResponseHandler.post(new Runnable() {
             @Override
             public void run() {
-                if (requestMap.get(token) != string)
+                if (requestMap.get(token) != groceryListItem)
                     return;
                 requestMap.remove(token);
                 mListener.onItemAdded(item);
@@ -138,19 +138,19 @@ public class ItemsHandlerThread<Token> extends HandlerThread {
         });
     }
     private void handleEditRequest(final Token token){
-        final String string = requestMap.get(token);
-        if (string == null)
+        final GroceryListItem groceryListItem = requestMap.get(token);
+        if (groceryListItem == null)
             return;
 
-        ItemUpdater itemUpdater = new ItemUpdater(string);
-        final String item = itemUpdater.updateItem();
+        ItemUpdater itemUpdater = new ItemUpdater(groceryListItem);
+        final GroceryListItem item = itemUpdater.updateItem();
 
         Log.i(TAG, "Item edited: " + item);
 
         mResponseHandler.post(new Runnable() {
             @Override
             public void run() {
-                if (requestMap.get(token) != string)
+                if (requestMap.get(token) != groceryListItem)
                     return;
                 requestMap.remove(token);
                 mListener.onItemEdited(item);
@@ -158,11 +158,11 @@ public class ItemsHandlerThread<Token> extends HandlerThread {
         });
     }
     private void handleDeleteRequest(final Token token){
-        final String string = requestMap.get(token);
-        if (string == null)
+        final GroceryListItem groceryListItem = requestMap.get(token);
+        if (groceryListItem == null)
             return;
 
-        ItemDeleter itemDeleter = new ItemDeleter(string);
+        ItemDeleter itemDeleter = new ItemDeleter(groceryListItem);
         itemDeleter.deleteItem();
 
         Log.i(TAG, "Item deleted");
@@ -170,10 +170,10 @@ public class ItemsHandlerThread<Token> extends HandlerThread {
         mResponseHandler.post(new Runnable() {
             @Override
             public void run() {
-                if (requestMap.get(token) != string)
+                if (requestMap.get(token) != groceryListItem)
                     return;
                 requestMap.remove(token);
-                mListener.onItemDeleted(string);
+                mListener.onItemDeleted(groceryListItem);
 
             }
         });
