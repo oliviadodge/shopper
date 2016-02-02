@@ -26,6 +26,12 @@
     <string name="edit_item_cancel">Cancel Edit</string>
     <string name="edit_item_delete">Delete Item</string>
 
+    <!--Toasts-->
+
+    <string name="toast_read_only_warning">Current access is read-only.</string>
+
+
+
 
 
 </resources>
